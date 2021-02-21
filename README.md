@@ -1,5 +1,7 @@
 # train-of-thought
 
+[Ramaximization](https://ramaximization.ru) hackathon project by team "Свидетели ретротранспозонов"
+
 ## Project structure
 
 - `data` contains prepared contest's dataset. xlsx are saved "as is", description is saved to txt file (to view it at github).
