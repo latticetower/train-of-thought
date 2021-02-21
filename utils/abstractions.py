@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from igraph import *
 
 
-def get_roads_graph(metrics, debug=True):
+def get_roads_graph(metrics, debug=False):
     station_names = np.unique(
         np.concatenate([
             metrics.From.values,
