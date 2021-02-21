@@ -46,8 +46,8 @@ def get_roads_graph(metrics, debug=True):
             if j%50000==0:
                 print(j)
     graph.add_edges(edges)#, distance=d, time=t)
-    for i in info:
-        graph.es[i]['info'] = info
+    for i, v in info.items():
+        graph.es[i]['info'] = v
         graph.es[i]['distance'] = distances[i]
         graph.es[i]['time'] = times[i]
     return graph
