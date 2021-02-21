@@ -50,7 +50,7 @@ def get_roads_graph(metrics, debug=False):
         graph.es[i]['info'] = v
         graph.es[i]['distance'] = distances[i]
         graph.es[i]['time'] = times[i]
-    return graph
+    return graph, name2vertex
 
 
 def init_stations(sources):
