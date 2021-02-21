@@ -1,6 +1,6 @@
 # train-of-thought
 
-[Ramaximization](https://ramaximization.ru) hackathon project by team "Свидетели ретротранспозонов"
+[Ramaximization](https://ramaximization.ru) hackathon solution made by team "Свидетели ретротранспозонов" (task 1 - Wagon logistics)
 
 ## Project structure
 
