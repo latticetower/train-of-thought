@@ -77,7 +77,13 @@ class Strategy(object):
         self.bad_orders = 0
         self.djkstra = graph.shortest_paths_dijkstra(weights="time")
         self.name2vertex = name2vertex
-    
+        self.total_orders = {}
+        self.bad_orders = {}
+        self.total_profit = 0
+        self.stale_stop = 0
+        self.stale_move = 0
+
+
     def are_compatible(self, type1, type2):
         return (str(type1) + "_" + str(type2)) in self.compability_model or (str(type2) + "_" + str(type1)) in self.compability_model or type1 == type2
 
@@ -98,9 +104,11 @@ class Strategy(object):
             #print(len(wagons_to_send))
             for wagon_id in self.wagon_manager.wagons_by_id:
                 wagon = self.wagon_manager.wagons_by_id[wagon_id]
+                if str(wagon.current_station) not in self.name2vertex or str(order.start_point) not in self.name2vertex:
+                    continue
                 if wagon.occupied or not self.are_compatible(order.wagon_type, wagon.type_of_wagon) or wagon.free_day + self.djkstra[self.name2vertex[str(order.start_point)]][self.name2vertex[str(wagon.current_station)]] > order.start_date:
                     continue
-                wagons_to_send.append(wagon)
+                wagons_to_send.append(wagon_id)
                 if len(wagons_to_send) == order.wagons:
                     break
             if len(wagons_to_send) < order.wagons:
@@ -117,5 +125,5 @@ class Strategy(object):
         while self.current_order < len(self.order_manager.orders) and self.order_manager.orders[self.current_order].start_date == day_num:
             self.start_order(self.order_manager.orders[self.current_order])
             self.current_order += 1
-            #print("Current order - " + str(self.current_order))
+            print("Current order - " + str(self.current_order))
 
