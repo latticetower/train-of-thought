@@ -44,9 +44,9 @@ def get_roads_graph(metrics, debug=True):
         if debug:
             if j%50000==0:
                 print(j)
-    graph.add_edges(edges)  #, distance=d, time=t)
-    for i, v in info.items():
-        graph.es[i]['info'] = v
+    graph.add_edges(edges)#, distance=d, time=t)
+    for i in info:
+        graph.es[i]['info'] = info
         graph.es[i]['distance'] = distances[i]
         graph.es[i]['time'] = times[i]
     return graph
@@ -58,28 +58,6 @@ def init_stations(sources):
     for station, d, u, c, wm in sources[columns].values:
         st = Station(name=str(station))
     pass
-
-def get_roads_graph(metrics):
-    name2vertex = dict()
-    graph = Graph()
-    columns = ["From", "To", "Group", "Distance", "Time", "PriceUnit"]
-    for s, e, gr, d, t, price in metrics[columns].values:
-        s = str(s)
-        e = str(e)
-        if s not in name2vertex:
-            u = graph.add_vertex(s)
-            name2vertex[s] = u
-        else:
-            u = name2vertex[s]
-        if e not in name2vertex:
-            v = graph.add_vertex(name=e)
-            name2vertex[e] = v
-        else:
-            v = name2vertex[e]
-        # selection = graph.es.select(_from=s, _to=e)
-        # if len(selection) < 1:
-        k = graph.add_edge(u, v, group=gr, distance=d, time=t, price_unit=price)
-    return graph
 
 
 @dataclass
