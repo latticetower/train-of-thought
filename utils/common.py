@@ -52,4 +52,15 @@ class WagonManager(object):
 
 
 class Strategy(object):
-    pass
+    def __init__(self, order_manager, wagon_manager, graph, compability_model, empty_costs):
+        self.order_manager = order_manager
+        self.wagon_manager = wagon_manager
+        self.graph = graph
+        self.compability_model = compability_model
+        self.empty_costs = empty_costs
+        self.total_cost = 0
+
+    
+    def are_compatible(self, type1, type2):
+        return (str(type1) + "_" + str(type2)) in self.compability_model
+
