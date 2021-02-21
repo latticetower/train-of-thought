@@ -5,7 +5,7 @@ import numpy as np
 from igraph import *
 
 
-def get_roads_graph(metrics, debug=False):
+def get_roads_graph(metrics, debug=True):
     station_names = np.unique(
         np.concatenate([
             metrics.From.values,
@@ -53,12 +53,52 @@ def get_roads_graph(metrics, debug=False):
     return graph, name2vertex
 
 
-def init_stations(sources):
-    columns = ["Station", "Date", "Units", "Stand", "WagonModel"]
-    stations = dict() #station by name
-    for station, d, u, c, wm in sources[columns].values:
-        st = Station(name=str(station))
-    pass
+def init_stations(sources, name2vertex=dict()):
+    """name2vertex gets modified"""
+    columns = ["Date", "Units", "Stand", "WagonModel"]
+    stations = dict() # station by name
+    max_date = sources.Date.max()
+    new_vertices = 0
+    station_days = dict()
+    for s, data in sources.groupby("Station"):
+        s = str(s)
+        if s not in name2vertex:
+            i = len(name2vertex)
+            name2vertex[s] = i
+            new_vertices += 1
+        else:
+            i = name2vertex[s]
+        if i not in station_days:
+            station_days[i] = []
+        for d, u, c, wm in data[columns].values:
+            station_days[i].append((d, u, c, wm))
+    print(new_vertices)
+    graph = Graph()
+    graph.add_vertices(len(name2vertex))
+    for i, j in name2vertex.items():
+        graph.vs[j]['name'] = i
+        graph.vs[j]['days'] = station_days.get(j, [])
+    return graph
+
+
+def get_wagon_graph(wagon_mode_compat):    
+    wagon_names = np.unique(np.concatenate([
+        wagon_mode_compat["NeedWagonModel"].values,
+        wagon_mode_compat["CompatibleWagonModel"].values,
+    ]))
+    graph = Graph()
+    graph.add_vertices(len(wagon_names))
+    wagon2vertex = {str(x): i for i, x in enumerate(wagon_names)}
+    edges = set()
+    for need, compat in wagon_mode_compat[["NeedWagonModel", "CompatibleWagonModel"]].drop_duplicates().values:
+        need = str(need)
+        compat = str(compat)
+        u = wagon2vertex[need]
+        v = wagon2vertex[compat]
+        edges.add((u, v))
+    edges = sorted(edges)
+    graph.add_edges(edges)
+    return graph, wagon2vertex
 
 
 @dataclass
