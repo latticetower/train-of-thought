@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from igraph import *
 
 
-def get_roads_graph(metrics, debug=False):
+def get_roads_graph(metrics, debug=True):
     station_names = np.unique(
         np.concatenate([
             metrics.From.values,
@@ -44,9 +44,9 @@ def get_roads_graph(metrics, debug=False):
         if debug:
             if j%50000==0:
                 print(j)
-    graph.add_edges(edges)#, distance=d, time=t)
-    for i in info:
-        graph.es[i]['info'] = info
+    graph.add_edges(edges)  #, distance=d, time=t)
+    for i, v in info.items():
+        graph.es[i]['info'] = v
         graph.es[i]['distance'] = distances[i]
         graph.es[i]['time'] = times[i]
     return graph
