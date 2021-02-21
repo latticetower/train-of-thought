@@ -1,6 +1,7 @@
 """Utility classes for my solution.
 """
 from dataclasses import dataclass
+import numpy as np
 from igraph import *
 
 
