@@ -1,4 +1,13 @@
-"""Utility classes for my solution.
+"""Utility classes.
+
+Methods to convert everything to igraph objects and communicate with them.
+Also contains `WorldModelEnv`: gym-like environment (no GUI for now), which 
+incapsulates 'world model', which is changed via interactions with user.
+
+There is a simple solution in `notebooks/world-env-solution.ipynb`,
+it is unfinished.
+Finished solution `notebooks/basic_template.ipynb` uses several graphs
+from this module and mostly rely on `utils/common.py` contents.
 """
 import numpy as np
 from igraph import *

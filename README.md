@@ -4,13 +4,10 @@
 
 ## Project structure
 
-- `data` contains prepared contest's dataset. xlsx are saved "as is", description is saved to txt file (to view it at github).
+- `data` contains prepared contest's dataset. xlsx are saved "as is", description is saved to txt file (to view it at github). It also contains prepared preprocessed tables extracted from `data/input_wagon.xlsx`.
 - `notebooks` contains .ipynb files - exploratorials and experiments with data (and maybe some plots)
-
-Will be added (these are planned, so they might not be used):
-- `models` for ML models
-- `weights` for saving weights
-- `experiments` - code used to train particular models and save resulting weights to `weights` directory.
+- `utils` contains method used in notebooks (common code to build graphs, work with data, etc.).
+- `results` contains required tables with metrics - KPI, emptyMoves and orders.
 
 
 ## Installation
@@ -24,4 +21,6 @@ To run (or re-run) .ipynb-files, which are located at notebooks directory, you'l
 
 ## HOWTO run code
 
-TBA
+During the hackathon we've used http://deepnote.com/ to edit data collaboratively. If you want to run provided .ipynb files locally, install [jupyter notebook](https://jupyter.org/install) and use it to open them.
+
+
