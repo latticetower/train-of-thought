@@ -220,12 +220,23 @@ class Route:
         self.arrivals = dict()
         self.history = dict()
 
-    def at(self, day):
+    def add(self, day, data):
+        if day not in self.arrivals:
+            self.arrivals[day] = []
+        self.arrivals[day].append(data)
+
+    def at(self, day, pop=True):
+        data = []
         if day in self.arrivals:
-            data = self.arrivals.pop(day)
-            self.history[day] = data
-            for x in data:
-                yield x
+            if pop:
+                data = self.arrivals.pop(day)
+                self.history[day] = data
+            else:
+                data = self.arrivals[day]
+            # day_info = data
+            # for x in data:
+            #     yield x
+        return data
 
 
 class MoveAction:
@@ -252,6 +263,7 @@ class WorldModelEnv:
         self.wagons = []
         self.world_state = self.init_world_graph()
         self.current_step = 0
+        self.routed_wagons = dict()  # wagon -> edge_id
 
     def new_wagon(self, wm_index, station=None):
         new_index = len(self.wagons)
@@ -293,12 +305,59 @@ class WorldModelEnv:
             # print(len(wagons))
             station.append_wagons(wagons)
 
-    def update_world_graph(self, wagon_moves):
-        self.spawn_wagons(self.world_state, step=self.current_step + 1)
+    def update_world_graph(self):
+        self.spawn_wagons(self.world_state, step=self.current_step)
 
     @property
     def available_orders(self):
         return self.orders.get(self.current_step, Graph())
+
+    def move_wagons2routes(self, actions):
+        wagons2remove = dict()
+        orders = dict()
+        for wid, (s, e, order_num, dur, tariff) in actions.items():
+            if order_num not in orders:
+                orders[order_num] = []
+            orders[order_num].append(tariff)
+            wagon = self.wagons[wid]
+            assert wagon.station == s
+            if s not in wagons2remove:
+                wagons2remove[s] = []
+            wagons2remove[s].append(wid)
+            # next: add to route:
+            k = self.world_state.get_eid(s, e)
+            r = self.world_state.es[k]['route']
+            r.add(self.current_step + dur, (wid, s, e, order_num, dur, tariff))
+            # remove wagon station
+            wagon.station = -1
+            self.routed_wagons[wid] = self.world_state.get_eid(s, e)
+            #break
+        # next: remove wagons from station wagon list
+        for s, wids in wagons2remove.items():
+            old_wagons = self.world_state.vs[s]['info'].wagons
+            self.world_state.vs[s]['info'].wagons = [o for o in old_wagons if o not in set(wids)]
+            # print(s, len(wids), len(old_wagons))
+        return orders
+
+    def arrival_profit(self):
+        profits = dict()
+        removed_wids = set()
+        edges = np.unique([edge for wid, edge in self.routed_wagons.items()])
+        for e in edges:
+            r = self.world_state.es[e]['route']
+            data = r.at(self.current_step, pop=True)
+            for (wid, s, e, order_num, dur, tariff) in data:
+                removed_wids.add(wid)
+                # 1. move wagon to new station e
+                self.wagons[e].station = e
+                self.world_state.vs[e]['info'].wagons.append(wid)
+                # 2. add profit from this
+                if not order_num in profits:
+                    profits[order_num] = []
+                profits[order_num].append(tariff)
+        for wid in removed_wids:
+            self.routed_wagons.pop(wid)
+        return profits
 
     def step(self, actions):
         """Move to the next day, taking orders related to wagon placements.
@@ -315,4 +374,15 @@ class WorldModelEnv:
         stations, mark order as done, add profit
 
         """
-        self.update_world_graph(wagon_moves)
+        orders_costs = self.move_wagons2routes(actions)  # 1.
+        self.current_step += 1  # 2.
+        # starting step 3
+        station_costs = dict()
+        for v in self.world_state.vs:
+            nw = len(v['info'].wagons)
+            cost = v['info'].stay_cost
+            station_costs[v['info'].index] = nw * cost
+        # station_costs contains costs for each station now
+        profits = self.arrival_profit()
+        self.update_world_graph()
+        return orders_costs, station_costs, profits
