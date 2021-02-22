@@ -2,6 +2,12 @@
 
 [Ramaximization](https://ramaximization.ru) hackathon solution made by team "Свидетели ретротранспозонов" (task 1 - Wagon logistics)
 
+Our best solution have produced the following results:
+
+![Our solution's KPI table](KPI.png)
+
+The full results, which were produced by `notebooks/basic_template.ipynb` script, can be found at `results` folder. `KPI.xlsx` file has LPI sheet filled by hand (screenshot shows its contents), the orders and empty moves can be found at `orders.csv` and `empty_moves.csv`.
+
 ## Project structure
 
 - `data` contains prepared contest's dataset. xlsx are saved "as is", description is saved to txt file (to view it at github). It also contains prepared preprocessed tables extracted from `data/input_wagon.xlsx`.
