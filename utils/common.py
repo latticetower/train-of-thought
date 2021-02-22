@@ -1,7 +1,7 @@
 """Basic classes"""
 
-class Order(object):
-    def __init__(self, start_point, end_point, start_date, wagons, wagon_type, cost_per_wagon, days, priority):
+class Order2(object):
+    def __init__(self, start_point, end_point, start_date, wagons, wagon_type, cost_per_wagon, days, priority, order_num):
         self.start_point = start_point
         self.end_point = end_point
         self.start_date = start_date
@@ -10,6 +10,7 @@ class Order(object):
         self.cost_per_wagon = cost_per_wagon
         self.days = days
         self.priority = priority
+        self.order_num = order_num
 
     def total_profit(self):
         return self.wagons * self.cost_per_wagon
@@ -90,6 +91,9 @@ class Strategy(object):
         self.stale_moves = stale_moves
         self.stale_moves_num = 0
         self.inv_name2vertex = {v: k for k, v in name2vertex.items()}
+        self.ord_log = []
+        self.stale_move_log = []
+
 
 
     def are_compatible(self, type1, type2):
@@ -130,6 +134,8 @@ class Strategy(object):
                 if order.start_point not in self.stale_prices:
                      self.stale_prices[order.start_point] = 50
                 self.stale_move += self.stale_moves[str(wagon.current_station) + "_" + str(order.start_point)]
+                self.stale_move_log.append(",".join(str(wagon.current_station), str(order.start_point), "P", str(wagon.wagon_type), str(wagon.free_day), str(wagon.free_day + self.djkstra[self.name2vertex[str(order.start_point)]][self.name2vertex[str(wagon.current_station)]]), "1", str(self.stale_moves[str(wagon.current_station) + "_" + str(order.start_point)]), str(order.order_num), "-" ))
+
                 self.stale_moves_num += 1
                 self.stale_stop -= (order.start_date - wagon.free_day) * self.stale_prices[wagon.current_station]
                 self.stale_stop += min (self.stale_prices[wagon.current_station], self.stale_prices[order.start_point]) * (order.start_date - wagon.free_day - self.djkstra[self.name2vertex[str(order.start_point)]][self.name2vertex[str(wagon.current_station)]])
@@ -150,7 +156,7 @@ class Strategy(object):
 
         self.profit_per_cat[order.priority] += order.total_profit()
         self.wagons_per_cat[order.priority] += order.wagons
-
+        self.ord_log.append(",".join([str(order.order_num),str(order.start_point), str(order.end_point),str(order.start_date),str(order.start_date),str(order.days),str(order.wagons),str(order.wagons),str(order.cost_per_wagon),str(order.wagon_type),str(order.priority),str(order.cost_per_wagon)])
 
     def run_day(self, day_num):
         for i in self.wagon_manager.wagons_by_id:
@@ -173,6 +179,7 @@ class Strategy(object):
                     m = min(i for i in neighbours if i > 0)
                     min_ind = neighbours.index(m)
                     self.stale_move += self.stale_moves[str(self.wagon_manager.wagons_by_id[i].current_station) + "_" + str(self.inv_name2vertex[min_ind])]
+                    self.stale_move_log.append(",".join(str(self.wagon_manager.wagons_by_id[i].current_station), str(self.inv_name2vertex[min_ind]), "P", str(self.wagon_manager.wagons_by_id[i].wagon_type), str(day_num), str(day_num + int(neighbours[min_ind])), "1", str(self.stale_moves[str(self.wagon_manager.wagons_by_id[i].current_station) + "_" + str(self.inv_name2vertex[min_ind])]), "-", "-" ))
                     self.stale_moves_num += 1
                     self.wagon_manager.update_wagon(i, self.inv_name2vertex[min_ind], day_num + int(neighbours[min_ind]))
                 else:
