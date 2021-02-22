@@ -1,6 +1,5 @@
 """Utility classes for my solution.
 """
-from dataclasses import dataclass
 import numpy as np
 from igraph import *
 
@@ -118,7 +117,7 @@ def get_wagon_graph(wagon_mode_compat):
     return graph, wagon2vertex
 
 
-def create_order_graph(orders, station2vertex):
+def create_order_graph(orders, station2vertex, wagon2vertex):
     columns = [
         "OrderNum",
         "Start",
@@ -131,6 +130,11 @@ def create_order_graph(orders, station2vertex):
         "NeedWagonModel",
         "ShortagePenalty"
     ]
+    for wm in np.unique(orders.NeedWagonModel.values):
+        wm = str(wm)
+        if wm not in wagon2vertex:
+            index = len(wagon2vertex)
+            wagon2vertex[wm] = index
     vertices = np.unique(np.concatenate([
         orders.Start.values,
         orders.Finish.values
@@ -151,17 +155,17 @@ def create_order_graph(orders, station2vertex):
         edges.append((u, v))
     # print(edges)
     graph.add_edges(edges)
-    graph['order_num'] = orders["OrderNum"].values
-    graph['dur'] = orders["Dur"].values
-    graph['min_unit'] = orders["MinUnit"].values
-    graph['max_unit'] = orders["MaxUnit"].values
-    graph['tariff'] = orders["Tariff"].apply(lambda xs: [int(x) for x in xs.split(":")]).values
-    graph["wagon_model"] = orders["NeedWagonModel"].values
-    graph["penalty"] = orders["ShortagePenalty"].values
+    graph.es['order_num'] = orders["OrderNum"].values
+    graph.es['dur'] = orders["Dur"].values
+    graph.es['min_unit'] = orders["MinUnit"].values
+    graph.es['max_unit'] = orders["MaxUnit"].values
+    graph.es['tariff'] = orders["Tariff"].apply(lambda xs: [int(x) for x in xs.split(":")]).values
+    graph.es["wagon_model"] = orders["NeedWagonModel"].apply(lambda x: wagon2vertex[str(x)]).values
+    graph.es["penalty"] = orders["ShortagePenalty"].values
     return graph
 
 
-def build_orders(orders, station2vertex):
+def build_orders(orders, station2vertex, wagon2vertex):
     columns = [
         "OrderNum",
         "Start",
@@ -176,34 +180,38 @@ def build_orders(orders, station2vertex):
     ]
     graphs = dict()
     for start_date, rows in orders[columns].groupby("StartDate"):
-        graph = create_order_graph(rows, station2vertex)
+        graph = create_order_graph(rows, station2vertex, wagon2vertex)
         graphs[start_date] = graph
     # return start_date, rows
     return graphs
 
 
-@dataclass
+
 class Wagon:
-    index: int = 0
-    # name: str = ""
-    wm_index: int = 0
-    station: int = -1
+    def __init__(self, index=0, wm_index=0, station=-1):
+        self.index = index
+        self.wm_index = wm_index
+        self.station = station
 
     def set_station(self, station):
         self.station = station
 
 
 
-@dataclass
 class Station:
-    index: int = 0
-    stay_cost: int = 0
-    wagons = []
+    def __init__(self, name="", index=0, stay_cost=0):
+        self.name = name
+        self.index = index
+        self.stay_cost = stay_cost
+        self.wagons = []
 
     def set_wagons(self, wagons):
         self.wagons = wagons
 
-@dataclass
+    def append_wagons(self, wagons):
+        self.wagons.extend(wagons)
+
+
 class Route:
     # start: int = 0
     # finish: int = 0
@@ -220,6 +228,12 @@ class Route:
                 yield x
 
 
+class MoveAction:
+    def __init__(self, end_station=-1, order_num=""):
+        self.end_station = end_station
+        self.order_num = order_num
+
+
 class WorldModelEnv:
     def __init__(self, orders=None, wagon_mode_compat=None, sources=None, metrics=None):
         self.roads_graph, self.station2vertex = get_roads_graph(metrics, debug=False)
@@ -229,7 +243,7 @@ class WorldModelEnv:
         # self.wagon_graph = wagon_graph
         # self.wagon2vertex = wagon2vertex
         self.station_graph = init_stations(sources, self.station2vertex, self.wagon2vertex)
-        self.orders = build_orders(orders, self.station2vertex)
+        self.orders = build_orders(orders, self.station2vertex, self.wagon2vertex)
         self.reset()
 
     def reset(self):
@@ -237,6 +251,7 @@ class WorldModelEnv:
         self.moves_history = []
         self.wagons = []
         self.world_state = self.init_world_graph()
+        self.current_step = 0
 
     def new_wagon(self, wm_index, station=None):
         new_index = len(self.wagons)
@@ -248,7 +263,20 @@ class WorldModelEnv:
     def init_world_graph(self):
         graph = Graph()
         graph.add_vertices(len(self.station2vertex))
-        arrivals_graph = self.station_graph.get(0, Graph())
+        for station_name, i in self.station2vertex.items():
+            station = Station(index=i, name=station_name)
+            graph.vs[i]['info'] = station
+        self.spawn_wagons(graph, step=0)
+        # print(station.wagons)
+        # graph.vs[i]['info'] = station
+        edges = self.roads_graph.get_edgelist()
+        graph.add_edges(edges)
+        graph.es['route'] = [Route() for k in range(len(edges))]
+        return graph
+
+    def spawn_wagons(self, graph, step=0):
+        # cost=0
+        arrivals_graph = self.station_graph.get(step, Graph())
         for i, v in enumerate(arrivals_graph.vs):
             stay_cost = 0
             wagons = []
@@ -260,22 +288,31 @@ class WorldModelEnv:
                         for k in range(n)
                     ]
                     wagons.extend(new_wagons)
-            station = Station(index=i, stay_cost=cost)
-            station.set_wagons(wagons)
-            # print(station.wagons)
-            graph.vs[i]['info'] = station
-        edges = self.roads_graph.get_edgelist()
-        graph.add_edges(edges)
-        graph.es['route'] = [Route() for k in range(len(edges))]
-        return graph
+            station = graph.vs[i]['info']
+            station.stay_cost = stay_cost
+            # print(len(wagons))
+            station.append_wagons(wagons)
 
     def update_world_graph(self, wagon_moves):
-        pass
+        self.spawn_wagons(self.world_state, step=self.current_step + 1)
 
-    def step(self, wagon_moves):
+    @property
+    def available_orders(self):
+        return self.orders.get(self.current_step, Graph())
+
+    def step(self, actions):
         """Move to the next day, taking orders related to wagon placements.
-        
+
         Returns reward for the step and computes different reward components, 
         which are stored in separate class. Also updates the world state graph.
+
+        # 0. validate (? ignore!)
+        # 1. add moves, move these wagons from stations to routes, compute
+        tariff
+        # 2. inc current day
+        # 3. compute costs for the wagons which are at the stations
+        # 4. check for the newly arrived wagons: move them to destination
+        stations, mark order as done, add profit
+
         """
         self.update_world_graph(wagon_moves)
