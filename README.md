@@ -29,4 +29,27 @@ To run (or re-run) .ipynb-files, which are located at notebooks directory, you'l
 
 During the hackathon we've used http://deepnote.com/ to edit data collaboratively. If you want to run provided .ipynb files locally, install [jupyter notebook](https://jupyter.org/install) and use it to open them.
 
+To do it, run 
+```
+jupyter notebook
+```
+from the project's root directory. After that open file `notebooks/basic_template.ipynb` and run it.
 
+We've also converted our best solution to utility script `process_orders.py`. If you'll run:
+```
+time python process_orders.py --datadir data
+```
+the script will process separate tables saved to `data` directory and save results to repository's root folder.
+The end of console output for this run will look similar to this:
+
+```
+Bad orders - {1: 30, 4: 144, 3: 25, 2: 70}
+Total orders - {4: 3146, 1: 578, 3: 235, 2: 153}
+Profit - 392870345
+Stale stop - 32272250.0
+Stale move - 245682786
+Profit per cat - {4: 280100214, 3: 26145138, 1: 82100895, 2: 4524098}
+python basic_template.py  261,41s user 1,92s system 96% cpu 4:32,75 total
+```
+
+Note, that it expects to find several `.csv.gz` files, which were produced from  `input_wagon.xlsx` sheets.
