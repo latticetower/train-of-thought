@@ -8,6 +8,8 @@ Our best solution have produced the following results:
 
 The full results, which were produced by `notebooks/basic_template.ipynb` script, can be found at `results` folder. `KPI.xlsx` file has LPI sheet filled by hand (screenshot shows its contents), the orders and empty moves can be found at `orders.csv` and `empty_moves.csv`.
 
+Our presentation can be found at Google Docs [here](https://drive.google.com/file/d/103TZjia1Uit7pbxe27JLvZB2xzgNn-FO/view?usp=sharing).
+
 ## Project structure
 
 - `data` contains prepared contest's dataset. xlsx are saved "as is", description is saved to txt file (to view it at github). It also contains prepared preprocessed tables extracted from `data/input_wagon.xlsx`.
